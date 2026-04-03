@@ -1,131 +1,225 @@
 # Enterprise KGateway Portal Demo
 
+This repository contains a complete demo of the **Solo Enterprise for kgateway Portal** — a Kubernetes-native API developer portal. It covers installation, API Product deployment, API key and OAuth credential self-service, and an end-to-end demo walkthrough.
+
+The demo deploys:
+- Solo Enterprise for kgateway (API gateway)
+- Keycloak (Identity Provider)
+- PostgreSQL (Portal datastore)
+- A Portal Frontend (developer UI) and Backend (portal server)
+- Three example API Products: **HTTPBin**, **Petstore**, and **Tracks**
+
+## Prerequisites
+
+- A running Kubernetes cluster with `kubectl` configured
+- `helm` installed
+- A Solo license key, set in the enviroment variable `ENT_KGATEWAY_LICENSE_KEY`
+- `curl` and `jq` available on your PATH
+
 ## Installation
 
-All installation and setup scripts can be found int the `./install` directory.
+All installation and setup scripts are in the `./install` directory.
 
-```
+```bash
 cd install
 ```
 
-Optional: Configure CoreDNS to route keycloak.example.com through the gateway. This is needed when keycloak's DNS name is not a registered DNS that is routable by both the front-end (UI) and backend (kgateway). Using CoreDNS, we route the keycloak.example.com hostname to the gateway, which routes it to out kgateway service on our Kubernetes cluster.
+Run the steps below **in order**.
 
-```
+### Step 1 — (Optional) Configure CoreDNS
+
+If `keycloak.example.com` is not resolvable by both the browser and kgateway (e.g., in a local cluster), configure CoreDNS to route that hostname through the gateway:
+
+```bash
 ./k8s-coredns-config.sh
 ```
 
-> [NOTE!]
-> The KGateway version that will be installed is set in a variable in the `install/env.sh` script.
+> [!NOTE]
+> The kgateway and Portal versions installed are configured in `install/env.sh`.
 
+### Step 2 — Install Solo Enterprise for kgateway
 
-Install Solo Enterprise for kgateway. This will also install Keycloak.
-```
-install-ent-kgateway-with-helm.sh
-```
+This also installs Keycloak.
 
-Install PostreSQL for Portal
-```
-install-portal-postgres.sh
+```bash
+./install-ent-kgateway-with-helm.sh
 ```
 
-Install pgAdmin PostgreSQL UI
-```
-install-pgadmin.sh
+### Step 3 — Install PostgreSQL for Portal
+
+```bash
+./install-portal-postgres.sh
 ```
 
-Configure Keycloak kgatewat and portal management realms
-```
-keycloak-kgateway-demo-realm.sh
-keycloak-portal-mgtm-realm.sh
+### Step 4 — (Optional) Install pgAdmin
+
+pgAdmin provides a browser-based PostgreSQL management UI, useful for inspecting Portal data during demos.
+
+```bash
+./install-pgadmin.sh
 ```
 
-Install Portal IDP Connect which integrates the Portal WebServer with the (in our case) Keycloak IdP
-```
-install-portal-idp-connect.sh
+### Step 5 — Configure Keycloak Realms
+
+```bash
+./keycloak-kgateway-demo-realm.sh
+./keycloak-portal-mgtm-realm.sh
 ```
 
-Install the Portal CRDs and Controller
-```
-install-portal-with-helm.sh
-```
+### Step 6 — Install Portal IDP Connect
 
-Setup the Portal WebServer, Frontend UI and routes.
-```
-setup-portal.sh
+IDP Connect integrates the Portal server with Keycloak.
+
+```bash
+./install-portal-idp-connect.sh
 ```
 
-## Gateway and Hostname configuration
+### Step 7 — Install the Portal CRDs and Controller
 
-In a local setup, the hostnames used in this demo, e.g.:
-- developer.example.com
-- keycloak.example.com
-- api.example.com
-- pgadmin.example.com
-
-should be configured to route to the `gw` in the `ingress-gw` namespace. This kgateway gateway-proxy serves the routing for all applications in this demo, the Portal Frontend, Portal Backend, Keycloak, APIProducts, etc. In a local demo, this can be configured by port-forwarding the gateway-proxy:
-
+```bash
+./install-portal-with-helm.sh
 ```
+
+### Step 8 — Set Up the Portal Web Server, Frontend, and Routes
+
+```bash
+./setup-portal.sh
+```
+
+## Gateway and Hostname Configuration
+
+The demo uses the following hostnames:
+
+| Hostname | Purpose |
+|---|---|
+| `developer.example.com` | Portal Frontend (developer UI) |
+| `keycloak.example.com` | Keycloak Identity Provider |
+| `api.example.com` | API Products |
+| `pgadmin.example.com` | pgAdmin UI |
+
+All hostnames are routed through the `gw` gateway in the `ingress-gw` namespace. For a local demo, port-forward the gateway proxy:
+
+```bash
 sudo kubectl -n ingress-gw port-forward deployments/gw 80:80
 ```
 
-and configuring all hostnames in `/etc/hosts` to route to `127.0.0.1`.
-
+Then add all hostnames to `/etc/hosts`, pointing to `127.0.0.1`.
 
 ## Authentication & Authorization
 
-Kgateway Portal supports both API-Key and OAuth based credential self-service. These credentials can be created in the context of an "Application", which can be created through the Portal UI (http://developer.example.com).
+kgateway Portal supports two credential types for API access: **API keys** and **OAuth tokens**. Both are managed through the Portal UI at `http://developer.example.com`, within the context of an *Application*.
 
-To configure API-Key AuthN or OAuth AuthN, we've provided the necessary scripts in the `install` directory which will register the required `AuthConfig`, `RateLimitConfig` and `EnterpriseKgatewayTrafficPolicy` to secure the route to your APIPrdouct.
+The `install` directory provides scripts that deploy the required `AuthConfig`, `RateLimitConfig`, and `EnterpriseKgatewayTrafficPolicy` resources to secure your API Products. The two authentication modes are mutually exclusive — running one setup script automatically removes the other.
 
-Setup APIKey Auth:
+**Set up API key authentication:**
 
-```
-setup-apiproducts-apikey.sh
-```
-
-Setup OAuth Auth:
-```
-setup-apiproducts-oauth.sh
+```bash
+./setup-apiproducts-apikey.sh
 ```
 
-The scripts will remove the other AuthN flavor if already installed. E.g. when you setup the OAuth AuthN via the script, the script will remove the APIKey AuthN if already installed. 
+**Set up OAuth authentication:**
 
-APIKey an OAuth AuthN can be removed using the scripts `remove-apiproducts-apikey.sh` and `remove-apiproducts-oauth.sh`.    
+```bash
+./setup-apiproducts-oauth.sh
+```
 
+To remove authentication entirely:
 
-# Demo Walkthrough
+```bash
+./remove-apiproducts-apikey.sh
+# or
+./remove-apiproducts-oauth.sh
+```
 
-- Open the Portal UI (Frontend) at http://developer.example.com.
-- Press the "Login" button in the top right, which will redirect you to Keycloak. Login with username `user1` and password `password`.
-- Navigate to the API view. Observe that there are no APIs deployed.
-- Deploy the HTTPBin APIProduct via the `setup-httpbin-apiproduct.sh` script located in the `install` directory.
-- After the HTTPBin application and routes have been succesfully deployed, the HTTPBin APIProduct will be show in the API view.
-- Click on the HTTPBin APIProduct to view its details. 
-- On the right side of the screen, click on "Swagger View" to open the Swagger UI. Observe that the paths in the OpenAPI spec are generated (stitched) from the HTTPRoute configurations in the `api-example-com-root-route` and the `httpbin-apiproduct` HTTPRoutes
-- In the Swagger UI, expand the `GET /httpbin/v1.0/get` operation, and use the "Try it out" button to try out this API. You should get a 200 response from the HTTPBin API.
-- Configure the APIKey AuthN/AuthZ using the `setup-apiproducts-apikey.sh` script in the `install` directory. This will deploy the AuthConfig, RateLimitConfig and EnterpriseKgatewayTrafficPolicy that configure API-Key based AuthN/AuthZ for the API Products.
-- Try to execute the `GET /httpbin/v1.0/get` API again. This time you will get a 403, as an APIKey. Also note that the Swagger view has an "Authorize" button at the top right.
-- To create an API-Key, first create a Team in the "Teams view". Within that Team, create an Application. Once you've created your Application, you can now create an API-Key from the "Applciations view".
-- In your Application view, click on "Add API Key" to create a new API-Key. Store the key in a secure location, it will only be shown once.
-- Go back to your HTTPBin APIProduct Swagger UI. Click on the "Authorize" button, type or paste your API-Key and click "Authorize"
-- Try to execute the `GET /httpbin/v1.0/get` API again. You will still get a 403! The reason for this is that you're not yet subscribed to API Product.
-- Go back to your Application view. At the bottom of the screen you will see a section call "API Subscriptions". Click on "Add Subscription", select the HTTPBin APIProduct and click on "Create Subscription".
-- A new Subscription will be shown with the status "Pending". The Subscription still needs to be approved by a Portal administrator.
-- Open another browser and navigate to http://developer.example.com. Click on the "Login" button to login via Keycloak, but this time login with username `admin` and password `admin`.
-- You will now see the Admin view of the Portal UI. Click on "Subscriptions" to navigate to the Subscriptions view. You will see the pending HTTPBin subscription that you've created earlier as `user1`.
-- In the HTTPBin subscription card, click on "Approve" to approve the subscription.
-- Navigate back to the browser of `user1`. In the Application view, you will see that the status of the HTTPBin subscription has changed from "Pending" to "Approved".
-- Go back to your HTTPBin APIProduct Swagger UI. Click on the "Authorize" button, type or paste your API-Key and click "Authorize"
-- Try to execute the `GET /httpbin/v1.0/get` API again. This time you will get a "200" response and you will see the result from the HTTPBin applcation, as you've authenticated with the API-Key you created earlier and authorized with the APIProduct subscription.
+## Demo Walkthrough
 
-*TODO*: Describe OAuth AuthN/AuthZ flow.
+This walkthrough demonstrates the full Portal lifecycle using the HTTPBin API Product. It covers: deploying an API Product, securing it with API key authentication, creating a team and application, generating an API key, subscribing to an API Product, and admin approval.
 
+### 1. Log in as a regular user
 
-# Other Demo Options
+1. Open the Portal UI at `http://developer.example.com`.
+2. Click **Login** (top right) — this redirects to Keycloak.
+3. Log in with username `user1` and password `password`.
+4. Navigate to the **APIs** view. No API Products are visible yet.
 
-The "Demo Walkthrough" shows the basic demo steps this demo provides. The demo however provides additional APIProducts with more complex configurations. E.g. the "Petstore" APIProduct composes 3 APIs from 3 different microservices into a single APIProduct using Portal's sticting technology. The "Tracks" APIProduct defines multiple versions of the APIProduct, both exposed via individual HTTPRoutes.
+### 2. Deploy the HTTPBin API Product
 
-Both APIProducts can be deployed via scripts in the `install` directory:
+Run the following script from the `install` directory:
 
-- `setup-petstore-apiproduct.sh`
-- `setup-tracks-apiproduct.sh`
+```bash
+./setup-httpbin-apiproduct.sh
+```
+
+Once the resources are deployed, the **HTTPBin** API Product appears in the Portal UI.
+
+### 3. Explore the API Product
+
+1. Click on the **HTTPBin** API Product to view its details.
+2. On the right side, click **Swagger View** to open the embedded Swagger UI.
+3. The paths in the OpenAPI spec are automatically generated (stitched) from the HTTPRoute configurations in `api-example-com-root-route` and `httpbin-apiproduct`.
+4. Expand `GET /httpbin/v1.0/get`, click **Try it out**, and execute the request. You should receive a `200` response.
+
+### 4. Enable API key authentication
+
+Run the API key authentication setup script from the `install` directory:
+
+```bash
+./setup-apiproducts-apikey.sh
+```
+
+This deploys the `AuthConfig`, `RateLimitConfig`, and `EnterpriseKgatewayTrafficPolicy` that enforce API key authentication on the API Products.
+
+Try `GET /httpbin/v1.0/get` again — you will now receive a `403 Forbidden`. The **Authorize** button is now visible in the Swagger UI (top right), ready to accept an API key.
+
+### 5. Create a team, application, and API key
+
+1. Navigate to the **Teams** view and create a new team.
+2. Inside that team, create an **Application**.
+3. Open the **Applications** view, select your application, and click **Add API Key**.
+4. Copy and store the API key somewhere safe — it is only shown once.
+
+### 6. Authorize in Swagger UI
+
+1. Go back to the HTTPBin API Product Swagger UI.
+2. Click **Authorize**, paste your API key, and click **Authorize**.
+3. Try `GET /httpbin/v1.0/get` again. You will still receive a `403` — because you are not yet subscribed to the API Product.
+
+### 7. Subscribe to the API Product
+
+1. In the **Applications** view, scroll to the **API Subscriptions** section at the bottom.
+2. Click **Add Subscription**, select the **HTTPBin** API Product, and click **Create Subscription**.
+3. The new subscription appears with status **Pending** — it requires approval from a Portal administrator.
+
+### 8. Approve the subscription as admin
+
+1. Open a **new browser window** (or private/incognito window) and navigate to `http://developer.example.com`.
+2. Log in with username `admin` and password `admin`.
+3. You will see the admin view of the Portal UI.
+4. Navigate to **Subscriptions**. The pending HTTPBin subscription from `user1` is listed.
+5. Click **Approve** on the HTTPBin subscription card.
+
+### 9. Call the API as an authenticated user
+
+1. Return to the `user1` browser. In the **Applications** view, the HTTPBin subscription status is now **Approved**.
+2. Go back to the HTTPBin Swagger UI and click **Authorize**. Paste your API key and click **Authorize**.
+3. Execute `GET /httpbin/v1.0/get`. You will receive a `200` response with the full HTTPBin output — authenticated via API key, with an approved subscription.
+
+## Additional API Products
+
+The demo includes two more API Products that showcase more advanced Portal features.
+
+### Petstore
+
+The **Petstore** API Product demonstrates Portal's API *stitching* capability: it composes three separate microservice APIs (pets, store, users) into a single unified API Product.
+
+```bash
+./setup-petstore-apiproduct.sh
+```
+
+### Tracks
+
+The **Tracks** API Product demonstrates **multi-version** API Products: two versions of the API (`v1` and `v2`) are exposed via separate HTTPRoutes and surfaced as a single versioned API Product in the Portal.
+
+```bash
+./setup-tracks-apiproduct.sh
+```
