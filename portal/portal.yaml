@@ -12,9 +12,7 @@ spec:
   apiProductRefs:
   - name: petstore
     namespace: petstore
-  - name: httpbin
-    namespace: "*"
-  - name: httpbin
-    namespace: kgateway-system
+  - name: "*"
+    namespace: httpbin
   - name: tracks
     namespace: tracks
