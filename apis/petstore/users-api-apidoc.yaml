@@ -1,0 +1,15 @@
+apiVersion: portal.solo.io/v1alpha1
+kind: ApiDoc
+metadata:
+  name: users
+  namespace: petstore
+  labels:
+    product: petstore
+spec:
+  source:
+    kube:
+      targetRef:
+        name: users-rest-api
+        namespace: petstore
+        port: 5000
+      path: /swagger.json

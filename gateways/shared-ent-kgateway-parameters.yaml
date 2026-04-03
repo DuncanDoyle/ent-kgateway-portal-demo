@@ -1,0 +1,22 @@
+apiVersion: enterprisekgateway.solo.io/v1alpha1
+kind: EnterpriseKgatewayParameters
+metadata:
+  name: shared-ent-kgateway-parameters
+  namespace: kgateway-system
+spec:
+  kube:
+    deployment:
+      replicas: 1
+    envoyContainer:
+      bootstrap:
+        logLevel: info
+      env:
+      - name: OTEL_RESOURCE_ATTRIBUTES
+        value: "environment=detector,resource=attribute"
+    sharedExtensions:
+      extCache:
+        enabled: true
+      extauth:
+        enabled: true
+      ratelimiter:
+        enabled: true

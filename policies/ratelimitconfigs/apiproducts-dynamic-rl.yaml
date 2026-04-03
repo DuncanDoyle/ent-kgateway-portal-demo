@@ -1,0 +1,26 @@
+# apiVersion: ratelimit.solo.io/v1alpha1
+apiVersion: ratelimit.solo.io/v1alpha1
+kind: RateLimitConfig
+metadata:
+  name: apiproducts-dynamic
+  namespace: kgateway-system
+spec:
+  raw:
+    setDescriptors:
+    - simpleDescriptors:
+      - key: generic_key
+        value: counter
+      rateLimit:
+        requestsPerUnit: 5
+        unit: MINUTE
+    rateLimits:
+    - setActions:
+      - genericKey:
+          descriptorValue: counter
+      limit:
+        dynamicMetadata:
+          metadataKey:
+            key: "envoy.filters.http.ext_authz"
+            path:
+            - key: "portalAuth"
+            - key: "rateLimit"

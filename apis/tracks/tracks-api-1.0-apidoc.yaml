@@ -1,0 +1,15 @@
+apiVersion: portal.solo.io/v1alpha1
+kind: ApiDoc
+metadata:
+  name: tracks-rest-api-1.0.0
+  namespace: tracks
+  labels:
+    product: tracks
+spec:
+  source:
+    kube:
+      targetRef:
+        name: tracks-rest-api-1-0
+        namespace: tracks
+        port: 5000
+      path: /swagger.json

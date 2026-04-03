@@ -1,0 +1,20 @@
+apiVersion: portal.solo.io/v1alpha1
+kind: Portal
+metadata:
+  name: portal
+  namespace: kgateway-system
+spec:
+  parametersRef:
+    name: portal-params   # name of your PortalParameters CR
+  # Controls whether the portal is publicly accessible without authentication.
+  visibility:
+    public: true
+  apiProductRefs:
+  - name: petstore
+    namespace: petstore
+  - name: httpbin
+    namespace: "*"
+  - name: httpbin
+    namespace: kgateway-system
+  - name: tracks
+    namespace: tracks

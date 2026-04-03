@@ -1,0 +1,32 @@
+apiVersion: enterprisekgateway.solo.io/v1alpha1
+kind: EnterpriseKgatewayTrafficPolicy
+metadata:
+  name: ektp-portal-apis
+  namespace: kgateway-system
+spec:
+  cors:
+    allowCredentials: true
+    allowHeaders:
+    - '*'
+    allowMethods:
+    - GET
+    - POST
+    - OPTIONS
+    - DELETE
+    allowOrigins:
+    - '*'
+    # allowOriginRegex:
+    # - .*
+  entExtAuth:
+    authConfigRef:
+      name: portal-apis
+      namespace: kgateway-system
+  # entRateLimit:
+  #   global:
+  #     rateLimitConfigRefs:
+  #     - name: limit-apis
+  #       namespace: kgateway-system
+  # targetRefs:
+  # - group: gateway.networking.k8s.io
+  #   kind: HTTPRoute
+  #   name: bookinfo

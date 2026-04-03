@@ -1,0 +1,16 @@
+apiVersion: portal.solo.io/v1alpha1
+kind: ApiDoc
+metadata:
+  name: httpbin
+  namespace: httpbin
+  labels:
+    product: httpbin
+spec:
+  source:
+    url:
+      endpoint: https://raw.githubusercontent.com/solo-io/solo-blog/main/zero-to-gateway/httpbin-openapi.json
+      # endpoint: https://raw.githubusercontent.com/DuncanDoyle/httpbin-openapi/refs/heads/main/openapi-3.0.3.json
+  servedBy:
+    name: httpbin
+    namespace: httpbin
+    port: 8000

@@ -1,0 +1,13 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: portal-kgateway-system-apiproduct-reference-grant
+  namespace: petstore
+spec:
+  from:
+    - group: portal.solo.io
+      kind: Portal
+      namespace: kgateway-system
+  to:
+    - group: portal.solo.io
+      kind: ApiProduct

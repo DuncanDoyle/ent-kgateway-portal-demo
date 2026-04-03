@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: portal-frontend
+  namespace: kgateway-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: portal-frontend
+  namespace: kgateway-system
+  labels:
+    app: portal-frontend
+    service: portal-frontend
+spec:
+  ports:
+  - name: http
+    port: 4000
+    targetPort: 4000
+  selector:
+    app: portal-frontend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portal-frontend
+  namespace: kgateway-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: portal-frontend
+  template:
+    metadata:
+      labels:
+        app: portal-frontend
+    spec:
+      serviceAccountName: portal-frontend
+      containers:
+      - image: gcr.io/solo-public/docs/portal-frontend:v0.1.6
+        # image: gcr.io/solo-public/docs/portal-frontend:latest
+        # image: gcr.io/solo-public/docs/portal-frontend:v0.1.2
+        # image: djannot/portal-frontend:gg-teams-apps-demo-v2.2
+        # image: duncandoyle/portal-frontend:gg-demo-custompages-v1.0.4
+        args: ["--host", "0.0.0.0"]
+        imagePullPolicy: Always
+        name: portal-frontend
+        ports:
+        - containerPort: 4000
+        readinessProbe:
+          httpGet:
+            path: /login
+            port: 4000
+        env:
+        - name: VITE_PORTAL_SERVER_URL
+          value: "http://developer.example.com/v1"
+        # - name: "VITE_CLIENT_ID"
+        #   value: "portal-client"
+        # - name: "VITE_TOKEN_ENDPOINT"
+        #   value: "http://keycloak.example.com/realms/kgateway-demo/protocol/openid-connect/token"
+        # - name: "VITE_AUTH_ENDPOINT"
+        #   value: "http://keycloak.example.com/realms/kgateway-demo/protocol/openid-connect/auth"
+        # - name: "VITE_LOGOUT_ENDPOINT"
+        #   value: "http://keycloak.example.com/realms/kgateway-demo/protocol/openid-connect/logout"
+        # - name: VITE_SWAGGER_PREFILL_API_KEY
+        #   value: '["bearerAuth","{{USER_TOKEN}}"]'
+        # - name: VITE_CUSTOM_PAGES
+        #   value: '[{"title": "Markdown Example", "path": "/pages/markdown-example.md"}, {"title": "HTML Example", "path": "/pages/html-example.html"}, {"title": "Knapsack Problem", "path": "/pages/knapsack.md"}]' 
+          # value: '[{"title": "Knapsack Problem", "path": "/pages/knapsack.md"}]'
+        # ----------------------------------------
+        - name: VITE_APPLIED_OIDC_AUTH_CODE_CONFIG
+          value: "true"
+        - name: VITE_OIDC_AUTH_CODE_CONFIG_CALLBACK_PATH
+          value: "/v1/login"
+        - name: VITE_OIDC_AUTH_CODE_CONFIG_LOGOUT_PATH
+          value: "/v1/logout"
+        # - name: VITE_SWAGGER_PREFILL_API_KEY
+        #   value: '["bearerAuth","{{USER_TOKEN}}"]'

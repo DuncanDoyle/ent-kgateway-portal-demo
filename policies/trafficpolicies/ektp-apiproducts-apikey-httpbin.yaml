@@ -1,0 +1,26 @@
+apiVersion: enterprisekgateway.solo.io/v1alpha1
+kind: EnterpriseKgatewayTrafficPolicy
+metadata:
+  name: ektp-apiproducts-apikey
+  namespace: httpbin
+spec:
+  entExtAuth:
+    authConfigRef:
+      name: apiproducts-apikey-portalauth
+      namespace: kgateway-system
+  cors:
+    allowCredentials: true
+    allowHeaders:
+    - "*"
+    allowMethods:
+    - GET
+    - OPTIONS
+    allowOrigins:
+    - "*"
+    # allowOriginRegex:
+    # - .*
+  entRateLimit:
+    global:
+      rateLimitConfigRefs:
+      - name: apiproducts-dynamic
+        namespace: kgateway-system

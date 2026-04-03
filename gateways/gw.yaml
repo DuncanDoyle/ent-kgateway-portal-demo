@@ -1,0 +1,79 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: gw
+  namespace: ingress-gw
+spec:
+  allowedListeners:
+    namespaces:
+      from: All
+  gatewayClassName: enterprise-kgateway
+  listeners:
+  - protocol: HTTP
+    port: 80
+    name: http-api
+    hostname: api.example.com
+    allowedRoutes:
+      namespaces:
+        # from: Same
+        # from: All
+        from: Selector # Only allow routes from namespaces with the following label set.
+        selector:
+          matchLabels:
+            shared-gateway-access: "true"
+      kinds:
+      - kind: HTTPRoute
+  - protocol: HTTP
+    port: 80
+    name: http-developer
+    hostname: developer.example.com
+    allowedRoutes:
+      namespaces:
+        # from: Same
+        # from: All
+        from: Selector # Only allow routes from namespaces with the following label set.
+        selector:
+          matchLabels:
+            shared-gateway-access: "true"
+      kinds:
+      - kind: HTTPRoute
+  - protocol: HTTP
+    port: 80
+    name: http-keycloak
+    hostname: keycloak.example.com
+    allowedRoutes:
+      namespaces:
+        # from: Same
+        # from: All
+        from: Selector # Only allow routes from namespaces with the following label set.
+        selector:
+          matchLabels:
+            shared-gateway-access: "true"
+      kinds:
+      - kind: HTTPRoute
+  - protocol: HTTP
+    port: 80
+    name: http-pgadmin
+    hostname: pgadmin.example.com
+    allowedRoutes:
+      namespaces:
+        # from: Same
+        # from: All
+        from: Selector # Only allow routes from namespaces with the following label set.
+        selector:
+          matchLabels:
+            shared-gateway-access: "true"
+      kinds:
+      - kind: HTTPRoute
+  - protocol: HTTP
+    port: 80
+    name: http-lambda
+    hostname: lambda.example.com
+    allowedRoutes:
+      namespaces:
+        from: Selector # Only allow routes from namespaces with the following label set.
+        selector:
+          matchLabels:
+            shared-gateway-access: "true"
+      kinds:
+      - kind: HTTPRoute

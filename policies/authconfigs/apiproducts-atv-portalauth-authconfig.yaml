@@ -1,0 +1,24 @@
+apiVersion: extauth.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: apiproducts-atv-portalauth
+  namespace: kgateway-system
+spec:
+  configs:
+    - name: oauth2
+      oauth2:
+        accessTokenValidation:
+          jwt:
+            remoteJwks:
+              url: http://keycloak.example.com/realms/portal-mgmt/protocol/openid-connect/certs
+    - name: portalAuth
+      portalAuth:
+        url: http://portal-portal.kgateway-system.svc.cluster.local:8080
+        redisOptions:
+          host: ext-cache-enterprise-kgateway:6379
+    # - name: opa
+    #   opaAuth:
+    #     modules:
+    #       - name: apis
+    #         namespace: gloo-system
+    #     query: "data.test.result"

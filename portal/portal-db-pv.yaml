@@ -1,0 +1,34 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: portal-postgres-pv
+  namespace: kgateway-system
+  labels:
+    type: local
+    app: portal-postgres
+spec:
+  storageClassName: "standard"
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    # ddoyle: '/mnt' does not seem to be persisted across restarts.
+    # path: "/mnt/portal/data"
+    path: "/var/lib/minikube/portal/data"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: portal-postgres-pvc
+  namespace: kgateway-system
+  labels:
+    app: portal-postgres
+spec:
+  storageClassName: "standard"
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi

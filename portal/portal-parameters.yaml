@@ -1,0 +1,18 @@
+apiVersion: portal.solo.io/v1alpha1
+kind: PortalParameters
+metadata:
+  name: portal-params
+  namespace: kgateway-system
+spec:
+  idpServerURL: "http://idp-connect.kgateway-system.svc.cluster.local"
+  store:
+    postgres:
+      secretRef:
+        name: portal-postgres-secret
+      # optional TLS config:
+  # webServer:
+  #   container:
+  #     image:
+  #       registry: "us-docker.pkg.dev/developers-369321/gloo-gateway"
+  #       repository: portal-web-server
+  #       tag: 2.0.0-local

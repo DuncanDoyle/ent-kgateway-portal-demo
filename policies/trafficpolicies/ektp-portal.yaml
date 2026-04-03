@@ -1,0 +1,25 @@
+apiVersion: enterprisekgateway.solo.io/v1alpha1
+kind: EnterpriseKgatewayTrafficPolicy
+metadata:
+  name: ektp-portal
+  namespace: kgateway-system
+spec:
+  cors:
+    allowCredentials: true
+    allowHeaders:
+    - '*'
+    allowMethods:
+    - GET
+    - OPTIONS
+    allowOrigins:
+    - '*'
+    # allowOriginRegex:
+    # - .*
+  entExtAuth:
+    authConfigRef:
+      name: portal
+      namespace: kgateway-system
+  # targetRefs:
+  # - group: gateway.networking.k8s.io
+  #   kind: HTTPRoute
+  #   name: portal

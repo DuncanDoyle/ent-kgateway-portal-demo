@@ -1,0 +1,20 @@
+apiVersion: extauth.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: apiproducts-apikey-portalauth
+  namespace: kgateway-system
+spec:
+  configs:
+    # - name: apikey
+    #   apiKeyAuth:
+    #     # This is the name of the header that is expected to contain the API key.
+    #     # This field is optional and defaults to `api-key` if not present.
+    #     headerName: api-key
+    #     # They API-Keys we validate the incoming API-Key against are selected using this labelSelector.
+    #     labelSelector:
+    #       team: infrastructure
+    - name: portalAuth
+      portalAuth:
+        url: http://portal-portal.kgateway-system.svc.cluster.local:8080
+        cacheDuration: 10s
+        apiKeyHeader: "x-api-key"

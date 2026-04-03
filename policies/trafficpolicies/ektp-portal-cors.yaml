@@ -1,0 +1,19 @@
+apiVersion: enterprisekgateway.solo.io/v1alpha1
+kind: EnterpriseKgatewayTrafficPolicy
+metadata:
+  name: ektp-portal-cors
+  namespace: kgateway-system
+spec:
+  cors:
+    allowCredentials: true
+    allowHeaders:
+    - '*'
+    allowMethods:
+    - GET
+    - POST
+    - OPTIONS
+    - DELETE
+    allowOrigins:
+    - '*'
+    # allowOriginRegex:
+    # - .*
