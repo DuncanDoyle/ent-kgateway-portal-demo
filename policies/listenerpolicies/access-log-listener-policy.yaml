@@ -1,0 +1,61 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: access-log-analytics
+  namespace: ingress-gw
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gw
+  default:
+    httpSettings:
+      accessLog:
+      - openTelemetry:
+          grpcService:
+            logName: api-access-logs
+            backendRef:
+              name: analytics-otel-collector
+              namespace: telemetry
+              port: 4317
+          attributes:
+            values:
+            - key: timestamp
+              value:
+                stringValue: "%START_TIME%"
+            - key: method
+              value:
+                stringValue: "%REQ(:METHOD)%"
+            - key: path
+              value:
+                stringValue: "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
+            - key: protocol
+              value:
+                stringValue: "%PROTOCOL%"
+            - key: response_code
+              value:
+                stringValue: "%RESPONSE_CODE%"
+            - key: duration_ms
+              value:
+                stringValue: "%DURATION%"
+            - key: bytes_sent
+              value:
+                stringValue: "%BYTES_SENT%"
+            - key: bytes_received
+              value:
+                stringValue: "%BYTES_RECEIVED%"
+            - key: user_agent
+              value:
+                stringValue: "%REQ(USER-AGENT)%"
+            - key: request_id
+              value:
+                stringValue: "%REQ(X-REQUEST-ID)%"
+            - key: api_product_id
+              value:
+                stringValue: "%DYNAMIC_METADATA(io.solo.gloo.portal:api_product_id)%"
+            - key: api_product_name
+              value:
+                stringValue: "%DYNAMIC_METADATA(io.solo.gloo.portal:api_product_name)%"
+            - key: api_version
+              value:
+                stringValue: "%DYNAMIC_METADATA(io.solo.gloo.portal:api_version)%"
