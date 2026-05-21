@@ -20,7 +20,7 @@ data:
           "id": 1,
           "title": "Total Requests",
           "type": "stat",
-          "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
           "targets": [{
             "rawSql": "SELECT count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp)",
@@ -31,7 +31,7 @@ data:
           "id": 2,
           "title": "Error Count (4xx/5xx)",
           "type": "stat",
-          "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
           "targets": [{
             "rawSql": "SELECT count(*) AS errors FROM default.api_access_logs WHERE $__timeFilter(Timestamp) AND ResponseCode >= 400",
@@ -42,7 +42,7 @@ data:
           "id": 3,
           "title": "p50 Latency (ms)",
           "type": "stat",
-          "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
           "targets": [{
             "rawSql": "SELECT round(quantile(0.50)(DurationMs), 1) AS p50_ms FROM default.api_access_logs WHERE $__timeFilter(Timestamp)",
@@ -53,7 +53,7 @@ data:
           "id": 4,
           "title": "p95 Latency (ms)",
           "type": "stat",
-          "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
           "targets": [{
             "rawSql": "SELECT round(quantile(0.95)(DurationMs), 1) AS p95_ms FROM default.api_access_logs WHERE $__timeFilter(Timestamp)",
@@ -67,7 +67,7 @@ data:
           "gridPos": { "h": 8, "w": 16, "x": 0, "y": 4 },
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
           "targets": [{
-            "rawSql": "SELECT toStartOfMinute(Timestamp) AS time, count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) GROUP BY time ORDER BY time",
+            "rawSql": "SELECT toStartOfInterval(Timestamp, INTERVAL $__interval_s second) AS time, count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) GROUP BY time ORDER BY time",
             "format": "time_series"
           }]
         },
@@ -89,7 +89,7 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
           "targets": [{
-            "rawSql": "SELECT ApiProductName, count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) GROUP BY ApiProductName ORDER BY requests DESC",
+            "rawSql": "SELECT ApiProductName, count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) GROUP BY ApiProductName ORDER BY requests DESC LIMIT 20",
             "format": "table"
           }]
         },
@@ -100,7 +100,7 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
           "targets": [{
-            "rawSql": "SELECT ApiVersion, count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) GROUP BY ApiVersion ORDER BY requests DESC",
+            "rawSql": "SELECT ApiVersion, count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) GROUP BY ApiVersion ORDER BY requests DESC LIMIT 20",
             "format": "table"
           }]
         },
