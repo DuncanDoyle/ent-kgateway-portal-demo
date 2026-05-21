@@ -1,0 +1,130 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-api-analytics-dashboard
+  namespace: telemetry
+  labels:
+    grafana_dashboard: "1"
+data:
+  api-analytics.json: |
+    {
+      "title": "API Analytics",
+      "uid": "api-analytics",
+      "version": 1,
+      "schemaVersion": 38,
+      "refresh": "30s",
+      "time": { "from": "now-1h", "to": "now" },
+      "templating": { "list": [] },
+      "panels": [
+        {
+          "id": 1,
+          "title": "Total Requests",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
+          "targets": [{
+            "rawSql": "SELECT count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp)",
+            "format": "table"
+          }]
+        },
+        {
+          "id": 2,
+          "title": "Error Count (4xx/5xx)",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
+          "targets": [{
+            "rawSql": "SELECT count(*) AS errors FROM default.api_access_logs WHERE $__timeFilter(Timestamp) AND ResponseCode >= 400",
+            "format": "table"
+          }]
+        },
+        {
+          "id": 3,
+          "title": "p50 Latency (ms)",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
+          "targets": [{
+            "rawSql": "SELECT round(quantile(0.50)(DurationMs), 1) AS p50_ms FROM default.api_access_logs WHERE $__timeFilter(Timestamp)",
+            "format": "table"
+          }]
+        },
+        {
+          "id": 4,
+          "title": "p95 Latency (ms)",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
+          "targets": [{
+            "rawSql": "SELECT round(quantile(0.95)(DurationMs), 1) AS p95_ms FROM default.api_access_logs WHERE $__timeFilter(Timestamp)",
+            "format": "table"
+          }]
+        },
+        {
+          "id": 5,
+          "title": "Requests Over Time",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 16, "x": 0, "y": 4 },
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
+          "targets": [{
+            "rawSql": "SELECT toStartOfMinute(Timestamp) AS time, count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) GROUP BY time ORDER BY time",
+            "format": "time_series"
+          }]
+        },
+        {
+          "id": 6,
+          "title": "Status Code Breakdown",
+          "type": "piechart",
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 4 },
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
+          "targets": [{
+            "rawSql": "SELECT toString(ResponseCode) AS status_code, count(*) AS count FROM default.api_access_logs WHERE $__timeFilter(Timestamp) GROUP BY ResponseCode ORDER BY count DESC",
+            "format": "table"
+          }]
+        },
+        {
+          "id": 7,
+          "title": "Requests by API Product",
+          "type": "barchart",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
+          "targets": [{
+            "rawSql": "SELECT ApiProductName, count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) GROUP BY ApiProductName ORDER BY requests DESC",
+            "format": "table"
+          }]
+        },
+        {
+          "id": 8,
+          "title": "Requests by API Version",
+          "type": "barchart",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
+          "targets": [{
+            "rawSql": "SELECT ApiVersion, count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) GROUP BY ApiVersion ORDER BY requests DESC",
+            "format": "table"
+          }]
+        },
+        {
+          "id": 9,
+          "title": "Top Paths",
+          "type": "table",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
+          "targets": [{
+            "rawSql": "SELECT Path, count(*) AS requests, round(avg(DurationMs), 1) AS avg_ms FROM default.api_access_logs WHERE $__timeFilter(Timestamp) GROUP BY Path ORDER BY requests DESC LIMIT 10",
+            "format": "table"
+          }]
+        },
+        {
+          "id": 10,
+          "title": "Requests by Application (placeholder — empty until application_id is exposed)",
+          "type": "table",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
+          "targets": [{
+            "rawSql": "SELECT ApplicationId, count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) AND ApplicationId != '' GROUP BY ApplicationId ORDER BY requests DESC LIMIT 10",
+            "format": "table"
+          }]
+        }
+      ]
+    }
