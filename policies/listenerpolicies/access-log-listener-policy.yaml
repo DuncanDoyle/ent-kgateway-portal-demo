@@ -15,6 +15,7 @@ spec:
           grpcService:
             logName: api-access-logs
             backendRef:
+              group: ""
               name: analytics-otel-collector
               namespace: telemetry
               port: 4317
