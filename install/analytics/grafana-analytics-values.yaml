@@ -1,0 +1,9 @@
+grafana:
+  plugins:
+    - grafana-clickhouse-datasource
+
+  # Inject the clickhouse-auth Secret as env vars into the Grafana container.
+  # The grafana subchart uses envFromSecrets (not extraEnvFrom).
+  # This makes ${password} available in datasource provisioning YAML.
+  envFromSecrets:
+    - name: clickhouse-auth

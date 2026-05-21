@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-clickhouse-datasource
+  namespace: telemetry
+  labels:
+    # The Grafana sidecar watches ConfigMaps with this label in the same namespace
+    # and provisions them as datasources automatically.
+    grafana_datasource: "1"
+data:
+  clickhouse-datasource.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: ClickHouse API Analytics
+        type: grafana-clickhouse-datasource
+        uid: clickhouse-api-analytics
+        access: proxy
+        orgId: 1
+        editable: true
+        jsonData:
+          host: clickhouse.analytics.svc.cluster.local
+          port: 9000
+          username: default
+          defaultDatabase: default
+          protocol: native
+        secureJsonData:
+          # ${password} is resolved from the clickhouse-auth Secret injected via
+          # grafana.envFromSecrets in grafana-analytics-values.yaml
+          password: ${password}
