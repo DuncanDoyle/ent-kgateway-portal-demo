@@ -1,0 +1,32 @@
+#!/bin/bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+echo "==> Removing ListenerPolicy and ReferenceGrant"
+kubectl delete -f "${SCRIPT_DIR}/../policies/listenerpolicies/access-log-listener-policy.yaml" --ignore-not-found
+kubectl delete -f "${SCRIPT_DIR}/../referencegrants/telemetry/listenerpolicy-ingress-gw-rg.yaml" --ignore-not-found
+
+echo "==> Removing Grafana dashboard, datasource, and plugin"
+kubectl delete -f "${SCRIPT_DIR}/analytics/grafana-dashboard.yaml" --ignore-not-found
+kubectl delete -f "${SCRIPT_DIR}/analytics/grafana-datasource.yaml" --ignore-not-found
+
+CHART_VERSION=$(helm list -n telemetry -o json | jq -r '.[] | select(.name=="kube-prometheus-stack") | .chart' | sed 's/kube-prometheus-stack-//')
+if [ -n "${CHART_VERSION}" ]; then
+  helm upgrade kube-prometheus-stack \
+    prometheus-community/kube-prometheus-stack \
+    --version "${CHART_VERSION}" \
+    --namespace telemetry \
+    --reuse-values \
+    --set grafana.plugins=null \
+    --set grafana.envFromSecrets=null \
+    --wait --timeout 120s
+fi
+
+echo "==> Removing analytics OTEL collector"
+kubectl delete -f "${SCRIPT_DIR}/analytics/otel-collector-analytics.yaml" --ignore-not-found
+kubectl delete secret clickhouse-auth -n telemetry --ignore-not-found
+
+echo "==> Removing ClickHouse"
+kubectl delete -f "${SCRIPT_DIR}/analytics/clickhouse.yaml" --ignore-not-found
+kubectl delete namespace analytics --ignore-not-found
