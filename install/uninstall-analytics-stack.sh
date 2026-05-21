@@ -1,6 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
+for cmd in kubectl helm jq; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "ERROR: $cmd is required but not found on PATH"; exit 1; }
+done
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "==> Removing ListenerPolicy and ReferenceGrant"
@@ -18,8 +22,8 @@ if [ -n "${CHART_VERSION}" ]; then
     --version "${CHART_VERSION}" \
     --namespace telemetry \
     --reuse-values \
-    --set grafana.plugins=null \
-    --set grafana.envFromSecrets=null \
+    --set-json 'grafana.plugins=[]' \
+    --set-json 'grafana.envFromSecrets=[]' \
     --wait --timeout 120s
 fi
 

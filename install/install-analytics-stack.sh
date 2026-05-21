@@ -1,5 +1,10 @@
 #!/bin/bash
+# Prerequisites: kubectl, helm, jq, and kube-prometheus-stack pre-installed in the telemetry namespace.
 set -euo pipefail
+
+for cmd in kubectl helm jq; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "ERROR: $cmd is required but not found on PATH"; exit 1; }
+done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ANALYTICS_DIR="${SCRIPT_DIR}/analytics"
@@ -59,9 +64,12 @@ echo "==> Applying ReferenceGrant and ListenerPolicy"
 kubectl apply -f "${SCRIPT_DIR}/../referencegrants/telemetry/listenerpolicy-ingress-gw-rg.yaml"
 kubectl apply -f "${SCRIPT_DIR}/../policies/listenerpolicies/access-log-listener-policy.yaml"
 
-GRAFANA_SVC=$(kubectl get svc -n telemetry -l app.kubernetes.io/name=grafana -o name | head -1)
+GRAFANA_SVC=$(kubectl get svc -n telemetry -l app.kubernetes.io/name=grafana -o name 2>/dev/null | head -1 || true)
+GRAFANA_ADMIN_PW=$(kubectl get secret -n telemetry -l app.kubernetes.io/name=grafana -o jsonpath='{.items[0].data.admin-password}' 2>/dev/null | base64 -d 2>/dev/null || echo "prom-operator")
 echo ""
 echo "==> Analytics stack installed."
-echo "    Grafana: kubectl port-forward -n telemetry ${GRAFANA_SVC} 3000:80"
+if [ -n "${GRAFANA_SVC}" ]; then
+  echo "    Grafana: kubectl port-forward -n telemetry ${GRAFANA_SVC} 3000:80"
+fi
 echo "    Dashboard: http://localhost:3000/d/api-analytics"
-echo "    Login: admin / prom-operator"
+echo "    Login: admin / ${GRAFANA_ADMIN_PW}"
