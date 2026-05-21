@@ -2,8 +2,9 @@ grafana:
   plugins:
     - grafana-clickhouse-datasource
 
-  # Inject the clickhouse-auth Secret as env vars into the Grafana container.
-  # The grafana subchart uses envFromSecrets (not extraEnvFrom).
-  # This makes ${password} available in datasource provisioning YAML.
+  # Inject the clickhouse-auth Secret as env vars so ${password} resolves in datasource YAML.
+  # Pre-requisite: the clickhouse-auth Secret must exist in the telemetry namespace.
+  # The install script creates it — see install/install-analytics-stack.sh.
+  # Note: the grafana subchart uses envFromSecrets (not extraEnvFrom).
   envFromSecrets:
     - name: clickhouse-auth

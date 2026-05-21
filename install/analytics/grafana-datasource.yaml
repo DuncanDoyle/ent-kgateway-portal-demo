@@ -16,7 +16,7 @@ data:
         uid: clickhouse-api-analytics
         access: proxy
         orgId: 1
-        editable: true
+        editable: false
         jsonData:
           host: clickhouse.analytics.svc.cluster.local
           port: 9000
