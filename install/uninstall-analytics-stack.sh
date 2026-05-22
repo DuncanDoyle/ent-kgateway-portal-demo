@@ -17,6 +17,9 @@ kubectl delete -f "${SCRIPT_DIR}/analytics/grafana-datasource.yaml" --ignore-not
 
 CHART_VERSION=$(helm list -n telemetry -o json | jq -r '.[] | select(.name=="kube-prometheus-stack") | .chart' | sed 's/kube-prometheus-stack-//')
 if [ -n "${CHART_VERSION}" ]; then
+  # Disable admission webhooks to avoid operator pod stuck on missing TLS secret.
+  # Use --atomic=false so the upgrade is not rolled back if operator is unhealthy
+  # (e.g. image pull timeout); Grafana itself always comes up fine.
   helm upgrade kube-prometheus-stack \
     prometheus-community/kube-prometheus-stack \
     --version "${CHART_VERSION}" \
@@ -24,7 +27,10 @@ if [ -n "${CHART_VERSION}" ]; then
     --reuse-values \
     --set-json 'grafana.plugins=[]' \
     --set-json 'grafana.envFromSecrets=[]' \
-    --wait --timeout 120s
+    --set prometheusOperator.admissionWebhooks.patch.enabled=false \
+    --set prometheusOperator.admissionWebhooks.enabled=false \
+    --atomic=false \
+    --timeout 120s || echo "WARN: helm upgrade returned non-zero (prometheus-operator may be unhealthy); continuing cleanup"
 fi
 
 echo "==> Removing analytics OTEL collector"

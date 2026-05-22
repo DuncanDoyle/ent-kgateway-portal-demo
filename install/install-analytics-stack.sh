@@ -47,6 +47,9 @@ if [ -z "${CHART_VERSION}" ]; then
 fi
 
 # Use --install to handle both fresh install and upgrade scenarios.
+# Disable admission webhooks to avoid the prometheus-operator pod getting stuck
+# on a missing TLS secret (kube-prometheus-stack-admission) in clusters where
+# the certgen job never ran or the secret was deleted.
 # NOTE: ClickHouse has a 1Gi memory limit. For sustained load or backlog replay,
 # consider bumping to 2Gi in clickhouse.yaml before running this script.
 helm upgrade --install kube-prometheus-stack \
@@ -55,7 +58,10 @@ helm upgrade --install kube-prometheus-stack \
   --namespace telemetry \
   --reuse-values \
   --values "${ANALYTICS_DIR}/grafana-analytics-values.yaml" \
-  --wait --timeout 120s
+  --set prometheusOperator.admissionWebhooks.patch.enabled=false \
+  --set prometheusOperator.admissionWebhooks.enabled=false \
+  --atomic=false \
+  --timeout 120s || echo "WARN: helm upgrade returned non-zero (prometheus-operator may be unhealthy); continuing install"
 
 kubectl apply -f "${ANALYTICS_DIR}/grafana-datasource.yaml"
 kubectl apply -f "${ANALYTICS_DIR}/grafana-dashboard.yaml"
