@@ -223,3 +223,63 @@ The **Tracks** API Product demonstrates **multi-version** API Products: two vers
 ```bash
 ./setup-tracks-apiproduct.sh
 ```
+
+## API Analytics Add-on
+
+The API Analytics add-on extends the demo with an access log pipeline that captures every request through the gateway and visualises API consumption in Grafana. It is **opt-in** — the base demo works without it.
+
+**Architecture:** kgateway ListenerPolicy → OTEL Collector → ClickHouse → Grafana dashboard
+
+### Prerequisites
+
+- The observability stack (Prometheus + Grafana via `kube-prometheus-stack`) must be running in the `telemetry` namespace. Install it with:
+  ```bash
+  ./otel/install-observability-stack.sh
+  ```
+- `jq` available on your PATH
+
+### Install
+
+```bash
+bash install/install-analytics-stack.sh
+```
+
+The script creates the `analytics` namespace, deploys ClickHouse, applies the schema, deploys the OTEL Collector, installs the Grafana ClickHouse plugin, and activates the access log pipeline. It prints the Grafana URL and credentials when complete.
+
+Override the default ClickHouse password by setting `CLICKHOUSE_PASSWORD` before running:
+
+```bash
+CLICKHOUSE_PASSWORD=my-password bash install/install-analytics-stack.sh
+```
+
+### Access the Dashboard
+
+Port-forward Grafana (if not already exposed):
+
+```bash
+kubectl port-forward -n telemetry svc/kube-prometheus-stack-grafana 3000:80
+```
+
+Open [http://localhost:3000/d/api-analytics](http://localhost:3000/d/api-analytics) and log in with `admin` and the password printed by the install script.
+
+The **API Analytics** dashboard shows:
+
+| Panel | Description |
+|---|---|
+| Total Requests | Count of all API requests in the selected time range |
+| Error Count | Count of 4xx/5xx responses |
+| p50 / p95 Latency | Median and 95th-percentile request duration |
+| Requests Over Time | Time-series of request volume (adaptive bucketing) |
+| Status Code Breakdown | Pie chart of HTTP response codes |
+| Requests by API Product | Bar chart grouped by API Product |
+| Requests by API Version | Bar chart grouped by API version |
+| Top Paths | Table of most-called paths with average latency |
+| Requests by Application | Placeholder — empty until `application_id` metadata is exposed by the Portal |
+
+### Uninstall
+
+```bash
+bash install/uninstall-analytics-stack.sh
+```
+
+Removes the ListenerPolicy, OTEL Collector, ClickHouse (including the PVC), Grafana plugin, datasource, and dashboard. The base demo continues to work after uninstall.
