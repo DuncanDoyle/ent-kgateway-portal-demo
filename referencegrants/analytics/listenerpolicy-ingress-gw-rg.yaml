@@ -1,0 +1,13 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: listenerpolicy-ingress-gw-service
+  namespace: analytics
+spec:
+  from:
+  - group: gateway.kgateway.dev
+    kind: ListenerPolicy
+    namespace: ingress-gw
+  to:
+  - group: ""
+    kind: Service
