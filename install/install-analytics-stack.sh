@@ -20,11 +20,6 @@ kubectl create secret generic clickhouse-auth \
   --from-literal=password="${CLICKHOUSE_PASSWORD}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
-# Copy the secret to telemetry namespace (avoids silent empty-value issue with variable expansion).
-kubectl get secret clickhouse-auth -n analytics -o yaml \
-  | sed 's/namespace: analytics/namespace: telemetry/' \
-  | kubectl apply -f -
-
 echo "==> Deploying ClickHouse"
 kubectl apply -f "${ANALYTICS_DIR}/clickhouse.yaml"
 kubectl rollout status statefulset/clickhouse -n analytics --timeout=180s
@@ -37,7 +32,7 @@ kubectl exec -n analytics statefulset/clickhouse -- \
 
 echo "==> Deploying analytics OTEL collector"
 kubectl apply -f "${ANALYTICS_DIR}/otel-collector-analytics.yaml"
-kubectl rollout status deployment/analytics-otel-collector -n telemetry --timeout=120s
+kubectl rollout status deployment/analytics-otel-collector -n analytics --timeout=120s
 
 echo "==> Configuring Grafana (plugin + datasource + dashboard)"
 CHART_VERSION=$(helm list -n telemetry -o json | jq -r '.[] | select(.name=="kube-prometheus-stack") | .chart' | sed 's/kube-prometheus-stack-//')
@@ -67,7 +62,7 @@ kubectl apply -f "${ANALYTICS_DIR}/grafana-datasource.yaml"
 kubectl apply -f "${ANALYTICS_DIR}/grafana-dashboard.yaml"
 
 echo "==> Applying ReferenceGrant and ListenerPolicy"
-kubectl apply -f "${SCRIPT_DIR}/../referencegrants/telemetry/listenerpolicy-ingress-gw-rg.yaml"
+kubectl apply -f "${SCRIPT_DIR}/../referencegrants/analytics/listenerpolicy-ingress-gw-rg.yaml"
 kubectl apply -f "${SCRIPT_DIR}/../policies/listenerpolicies/access-log-listener-policy.yaml"
 
 GRAFANA_SVC=$(kubectl get svc -n telemetry -l app.kubernetes.io/name=grafana -o name 2>/dev/null | head -1 || true)

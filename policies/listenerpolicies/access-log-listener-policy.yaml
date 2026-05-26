@@ -17,7 +17,7 @@ spec:
             backendRef:
               group: ""
               name: analytics-otel-collector
-              namespace: telemetry
+              namespace: analytics
               port: 4317
           attributes:
             values:

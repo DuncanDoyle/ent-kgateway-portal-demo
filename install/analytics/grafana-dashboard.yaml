@@ -14,7 +14,26 @@ data:
       "schemaVersion": 38,
       "refresh": "30s",
       "time": { "from": "now-1h", "to": "now" },
-      "templating": { "list": [] },
+      "templating": {
+        "list": [
+          {
+            "name": "api_product_name",
+            "label": "API Product",
+            "type": "query",
+            "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
+            "definition": "SELECT DISTINCT ApiProductName FROM default.api_access_logs WHERE ApiProductName != '' ORDER BY ApiProductName",
+            "query": "SELECT DISTINCT ApiProductName FROM default.api_access_logs WHERE ApiProductName != '' ORDER BY ApiProductName",
+            "includeAll": true,
+            "allValue": "All",
+            "multi": false,
+            "refresh": 2,
+            "sort": 1,
+            "hide": 0,
+            "options": [],
+            "current": {}
+          }
+        ]
+      },
       "panels": [
         {
           "id": 1,
@@ -23,7 +42,7 @@ data:
           "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
           "targets": [{
-            "rawSql": "SELECT count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp)",
+            "rawSql": "SELECT count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) AND ('${api_product_name}' = 'All' OR ApiProductName = '${api_product_name}')",
             "format": "table"
           }]
         },
@@ -34,7 +53,7 @@ data:
           "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
           "targets": [{
-            "rawSql": "SELECT count(*) AS errors FROM default.api_access_logs WHERE $__timeFilter(Timestamp) AND ResponseCode >= 400",
+            "rawSql": "SELECT count(*) AS errors FROM default.api_access_logs WHERE $__timeFilter(Timestamp) AND ResponseCode >= 400 AND ('${api_product_name}' = 'All' OR ApiProductName = '${api_product_name}')",
             "format": "table"
           }]
         },
@@ -45,7 +64,7 @@ data:
           "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
           "targets": [{
-            "rawSql": "SELECT round(quantile(0.50)(DurationMs), 1) AS p50_ms FROM default.api_access_logs WHERE $__timeFilter(Timestamp)",
+            "rawSql": "SELECT round(quantile(0.50)(DurationMs), 1) AS p50_ms FROM default.api_access_logs WHERE $__timeFilter(Timestamp) AND ('${api_product_name}' = 'All' OR ApiProductName = '${api_product_name}')",
             "format": "table"
           }]
         },
@@ -56,7 +75,7 @@ data:
           "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
           "targets": [{
-            "rawSql": "SELECT round(quantile(0.95)(DurationMs), 1) AS p95_ms FROM default.api_access_logs WHERE $__timeFilter(Timestamp)",
+            "rawSql": "SELECT round(quantile(0.95)(DurationMs), 1) AS p95_ms FROM default.api_access_logs WHERE $__timeFilter(Timestamp) AND ('${api_product_name}' = 'All' OR ApiProductName = '${api_product_name}')",
             "format": "table"
           }]
         },
@@ -67,18 +86,67 @@ data:
           "gridPos": { "h": 8, "w": 16, "x": 0, "y": 4 },
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
           "targets": [{
-            "rawSql": "SELECT toStartOfInterval(Timestamp, INTERVAL $__interval_s second) AS time, count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) GROUP BY time ORDER BY time",
-            "format": "time_series"
+            "rawSql": "SELECT toStartOfInterval(Timestamp, INTERVAL $__interval_s second) AS time, count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) AND ('${api_product_name}' = 'All' OR ApiProductName = '${api_product_name}') GROUP BY time ORDER BY time",
+            "format": "table"
           }]
         },
         {
           "id": 6,
-          "title": "Status Code Breakdown",
-          "type": "piechart",
-          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 4 },
+          "title": "2xx Requests",
+          "type": "stat",
+          "gridPos": { "h": 3, "w": 8, "x": 16, "y": 4 },
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "fixedColor": "green", "mode": "fixed" },
+              "mappings": [],
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }] }
+            },
+            "overrides": []
+          },
+          "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
           "targets": [{
-            "rawSql": "SELECT toString(ResponseCode) AS status_code, count(*) AS count FROM default.api_access_logs WHERE $__timeFilter(Timestamp) GROUP BY ResponseCode ORDER BY count DESC",
+            "rawSql": "SELECT count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) AND ResponseCode >= 200 AND ResponseCode < 300 AND ('${api_product_name}' = 'All' OR ApiProductName = '${api_product_name}')",
+            "format": "table"
+          }]
+        },
+        {
+          "id": 11,
+          "title": "4xx Requests",
+          "type": "stat",
+          "gridPos": { "h": 3, "w": 8, "x": 16, "y": 7 },
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "fixedColor": "orange", "mode": "fixed" },
+              "mappings": [],
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "orange" }] }
+            },
+            "overrides": []
+          },
+          "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+          "targets": [{
+            "rawSql": "SELECT count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) AND ResponseCode >= 400 AND ResponseCode < 500 AND ('${api_product_name}' = 'All' OR ApiProductName = '${api_product_name}')",
+            "format": "table"
+          }]
+        },
+        {
+          "id": 12,
+          "title": "5xx Requests",
+          "type": "stat",
+          "gridPos": { "h": 2, "w": 8, "x": 16, "y": 10 },
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "fixedColor": "red", "mode": "fixed" },
+              "mappings": [],
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "red" }] }
+            },
+            "overrides": []
+          },
+          "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+          "targets": [{
+            "rawSql": "SELECT count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) AND ResponseCode >= 500 AND ('${api_product_name}' = 'All' OR ApiProductName = '${api_product_name}')",
             "format": "table"
           }]
         },
@@ -89,7 +157,7 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
           "targets": [{
-            "rawSql": "SELECT ApiProductName, count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) GROUP BY ApiProductName ORDER BY requests DESC LIMIT 20",
+            "rawSql": "SELECT ApiProductName, count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) AND ('${api_product_name}' = 'All' OR ApiProductName = '${api_product_name}') GROUP BY ApiProductName ORDER BY requests DESC LIMIT 20",
             "format": "table"
           }]
         },
@@ -100,7 +168,7 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
           "targets": [{
-            "rawSql": "SELECT ApiVersion, count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) GROUP BY ApiVersion ORDER BY requests DESC LIMIT 20",
+            "rawSql": "SELECT ApiVersion, count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) AND ('${api_product_name}' = 'All' OR ApiProductName = '${api_product_name}') GROUP BY ApiVersion ORDER BY requests DESC LIMIT 20",
             "format": "table"
           }]
         },
@@ -111,7 +179,7 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
           "targets": [{
-            "rawSql": "SELECT Path, count(*) AS requests, round(avg(DurationMs), 1) AS avg_ms FROM default.api_access_logs WHERE $__timeFilter(Timestamp) GROUP BY Path ORDER BY requests DESC LIMIT 10",
+            "rawSql": "SELECT Path, count(*) AS requests, round(avg(DurationMs), 1) AS avg_ms FROM default.api_access_logs WHERE $__timeFilter(Timestamp) AND ('${api_product_name}' = 'All' OR ApiProductName = '${api_product_name}') GROUP BY Path ORDER BY requests DESC LIMIT 10",
             "format": "table"
           }]
         },
@@ -122,7 +190,7 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-api-analytics" },
           "targets": [{
-            "rawSql": "SELECT ApplicationId, count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) AND ApplicationId != '' GROUP BY ApplicationId ORDER BY requests DESC LIMIT 10",
+            "rawSql": "SELECT ApplicationId, count(*) AS requests FROM default.api_access_logs WHERE $__timeFilter(Timestamp) AND ApplicationId != '' AND ('${api_product_name}' = 'All' OR ApiProductName = '${api_product_name}') GROUP BY ApplicationId ORDER BY requests DESC LIMIT 10",
             "format": "table"
           }]
         }

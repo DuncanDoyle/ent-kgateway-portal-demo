@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "==> Removing ListenerPolicy and ReferenceGrant"
 kubectl delete -f "${SCRIPT_DIR}/../policies/listenerpolicies/access-log-listener-policy.yaml" --ignore-not-found
-kubectl delete -f "${SCRIPT_DIR}/../referencegrants/telemetry/listenerpolicy-ingress-gw-rg.yaml" --ignore-not-found
+kubectl delete -f "${SCRIPT_DIR}/../referencegrants/analytics/listenerpolicy-ingress-gw-rg.yaml" --ignore-not-found
 
 echo "==> Removing Grafana dashboard, datasource, and plugin"
 kubectl delete -f "${SCRIPT_DIR}/analytics/grafana-dashboard.yaml" --ignore-not-found
@@ -35,7 +35,7 @@ fi
 
 echo "==> Removing analytics OTEL collector"
 kubectl delete -f "${SCRIPT_DIR}/analytics/otel-collector-analytics.yaml" --ignore-not-found
-kubectl delete secret clickhouse-auth -n telemetry --ignore-not-found
+kubectl delete secret clickhouse-auth -n analytics --ignore-not-found
 
 echo "==> Removing ClickHouse"
 kubectl delete -f "${SCRIPT_DIR}/analytics/clickhouse.yaml" --ignore-not-found
