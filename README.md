@@ -276,6 +276,37 @@ The **API Analytics** dashboard shows:
 | Top Paths | Table of most-called paths with average latency |
 | Requests by Application | Placeholder — empty until `application_id` metadata is exposed by the Portal |
 
+### Querying ClickHouse directly
+
+**ClickHouse Play (built-in web UI)** — port-forward port 8123 and open it in a browser:
+
+```bash
+kubectl port-forward -n analytics statefulset/clickhouse 8123:8123
+```
+
+Then open [http://localhost:8123/play](http://localhost:8123/play). Log in with username `default` and the ClickHouse password (printed by the install script, or the value of `CLICKHOUSE_PASSWORD`).
+
+**clickhouse-client (CLI)** — exec into the pod:
+
+```bash
+kubectl exec -it -n analytics statefulset/clickhouse -- \
+  clickhouse-client --user default --password <password>
+```
+
+Useful queries:
+
+```sql
+-- Recent API calls
+SELECT * FROM api_access_logs ORDER BY Timestamp DESC LIMIT 20;
+
+-- Request count per API product
+SELECT api_product_id, count() AS requests FROM api_access_logs GROUP BY api_product_id;
+
+-- Error rate by path
+SELECT path, countIf(response_code >= 400) AS errors, count() AS total
+FROM api_access_logs GROUP BY path ORDER BY errors DESC;
+```
+
 ### Uninstall
 
 ```bash
