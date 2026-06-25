@@ -359,6 +359,34 @@ EOM
 curl -k -X POST -H "Authorization: Bearer ${KEYCLOAK_TOKEN}"  -H "Content-Type: application/json" -d "$CREATE_USER_TWO_JSON" $KEYCLOAK_URL/admin/realms/$REALM/users
 
 
+################################################ User Three: user3@acme.com ################################################
+
+# Create third user
+CREATE_USER_THREE_JSON=$(cat <<EOM
+{
+  "username": "user3",
+  "email": "user3@acme.com",
+  "firstName": "User",
+  "lastName": "Three",
+  "emailVerified": true,
+  "enabled": true, 
+  "attributes": {
+    "group": "users",
+    "subscription": "free",
+    "show_personal_data": "false"
+  }, 
+  "credentials": [
+    {
+      "type": "password",
+      "value": "password",
+      "temporary": false
+    }
+  ]
+}
+EOM
+)
+curl -k -X POST -H "Authorization: Bearer ${KEYCLOAK_TOKEN}"  -H "Content-Type: application/json" -d "$CREATE_USER_THREE_JSON" $KEYCLOAK_URL/admin/realms/$REALM/users
+
 
 ################################################ Admin One: admin1@solo.io ################################################
 
