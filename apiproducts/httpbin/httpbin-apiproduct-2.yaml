@@ -1,0 +1,24 @@
+apiVersion: portal.solo.io/v1alpha1
+kind: ApiProduct
+metadata:
+  name: httpbin-2
+  namespace: httpbin
+spec:
+  id: httpbin-2-svc
+  displayName: HTTPBin 2 Service v1
+  customMetadata:
+    image: <url>
+    pii-sensitive: "true"
+    api-category: "demo"
+  versions:
+  - name: "v1"
+    targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: httpbin-apiproduct-2
+      apiDocSelectors:          # optional; required when backend has multiple ApiDocs
+      - name: httpbin-2
+        namespace: httpbin
+    openApiMetadata:
+    customMetadata:
+      phase: supported
