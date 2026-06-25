@@ -20,6 +20,13 @@ kubectl create secret generic clickhouse-auth \
   --from-literal=password="${CLICKHOUSE_PASSWORD}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
+# Grafana (in the telemetry namespace) references this secret via envFromSecrets,
+# which looks in the pod's own namespace — so the secret must also exist there.
+kubectl create secret generic clickhouse-auth \
+  --namespace telemetry \
+  --from-literal=password="${CLICKHOUSE_PASSWORD}" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
 echo "==> Deploying ClickHouse"
 kubectl apply -f "${ANALYTICS_DIR}/clickhouse.yaml"
 kubectl rollout status statefulset/clickhouse -n analytics --timeout=180s

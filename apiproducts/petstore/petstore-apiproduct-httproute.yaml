@@ -13,13 +13,6 @@ spec:
       - path:
           type: PathPrefix
           value: /pet
-      # filters:
-      # # Need to specify the URLRewrite here because of a bug in the stitching logic of the Portal controller.
-      # - type: URLRewrite
-      #   urlRewrite:
-      #     path:
-      #       type: ReplacePrefixMatch
-      #       replacePrefixMatch: /pet
       backendRefs:
       - name: pets-rest-api
         namespace: petstore
@@ -28,13 +21,6 @@ spec:
       - path:
           type: PathPrefix
           value: /user
-      # filters:
-      # # Need to specify the URLRewrite here because of a bug in the stitching logic of the Portal controller.
-      # - type: URLRewrite
-      #   urlRewrite:
-      #     path:
-      #       type: ReplacePrefixMatch
-      #       replacePrefixMatch: /user
       backendRefs:
       - name: users-rest-api
         namespace: petstore
@@ -43,13 +29,6 @@ spec:
       - path:
           type: PathPrefix
           value: /store
-      # filters:
-      # # Need to specify the URLRewrite here because of a bug in the stitching logic of the Portal controller.
-      # - type: URLRewrite
-      #   urlRewrite:
-      #     path:
-      #       type: ReplacePrefixMatch
-      #       replacePrefixMatch: /store
       backendRefs:
       - name: store-rest-api
         namespace: petstore

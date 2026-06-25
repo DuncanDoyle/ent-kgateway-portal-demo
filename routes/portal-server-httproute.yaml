@@ -32,7 +32,7 @@ spec:
       name: portal-portal
       port: 8080
       weight: 1
-  # Route that's used for interactive (UI) when we use keycloak-sessio cookies.
+  # Route that's used for interactive (UI) when we use keycloak-session cookies.
   - matches:
     - headers:
       - name: Cookie

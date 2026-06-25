@@ -64,6 +64,24 @@ spec:
       kind: HTTPRoute
       name: httpbin-apiproduct
       namespace: httpbin
+  - name: httpbin-2-v1.0
+    matches:  
+    - path:
+        type: PathPrefix
+        value: /httpbin-2/v1.0/
+      # method: GET
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /
+    backendRefs:
+    # Delegate to another HTTPRoute
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: httpbin-apiproduct-2
+      namespace: httpbin
   # - matches:  
   #   - path:
   #       type: PathPrefix
