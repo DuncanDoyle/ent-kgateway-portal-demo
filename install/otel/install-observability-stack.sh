@@ -1,0 +1,296 @@
+#!/bin/sh
+
+################################################################################################################################
+#
+# Installation scripts copied from docs here: https://github.com/solo-io/gloo-gateway/issues/149#issuecomment-3036145106
+#
+# Note that default username/password for Kube Prometheus Stack Grafana is: admin/prom-operator
+#
+################################################################################################################################
+
+helm repo update
+
+# Grafana Tempo for tracing
+helm upgrade --install tempo grafana/tempo \
+--version 1.16.0 \
+--namespace telemetry \
+--create-namespace \
+--values - <<EOF
+persistence:
+  enabled: false
+tempo:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+EOF
+
+# Grafana Loki for logs
+helm upgrade --install loki grafana/loki \
+--version 6.24.0 \
+--namespace telemetry \
+--create-namespace \
+--values - <<EOF
+loki:
+  commonConfig:
+    replication_factor: 1
+  schemaConfig:
+    configs:
+      - from: 2024-04-01
+        store: tsdb
+        object_store: s3
+        schema: v13
+        index:
+          prefix: loki_index_
+          period: 24h
+  auth_enabled: false
+singleBinary:
+  replicas: 1
+minio:
+  enabled: true
+gateway:
+  enabled: false
+test:
+  enabled: false
+monitoring:
+  selfMonitoring:
+    enabled: false
+    grafanaAgent:
+      installOperator: false
+lokiCanary:
+  enabled: false
+limits_config:
+  allow_structured_metadata: true
+memberlist:
+  service:
+    publishNotReadyAddresses: true
+deploymentMode: SingleBinary
+backend:
+  replicas: 0
+read:
+  replicas: 0
+write:
+  replicas: 0
+ingester:
+  replicas: 0
+querier:
+  replicas: 0
+queryFrontend:
+  replicas: 0
+queryScheduler:
+  replicas: 0
+distributor:
+  replicas: 0
+compactor:
+  replicas: 0
+indexGateway:
+  replicas: 0
+bloomCompactor:
+  replicas: 0
+bloomGateway:
+  replicas: 0
+EOF
+
+# kube-prometheus-stack for infrastructure and metrics monitoring
+helm upgrade --install kube-prometheus-stack \
+prometheus-community/kube-prometheus-stack \
+--version 75.6.1 \
+--namespace telemetry \
+--create-namespace \
+--values - <<EOF
+alertmanager:
+  enabled: false
+prometheus:
+  prometheusSpec:
+    ruleSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    enableFeatures:
+      - native-histograms
+    enableRemoteWriteReceiver: true
+grafana:
+  enabled: true
+  defaultDashboardsEnabled: true
+  datasources:
+   datasources.yaml:
+     apiVersion: 1
+     datasources:
+      - name: Prometheus
+        type: prometheus
+        uid: prometheus
+        access: proxy
+        orgId: 1
+        url: http://kube-prometheus-stack-prometheus.telemetry:9090
+        basicAuth: false
+        editable: true
+        jsonData:
+          httpMethod: GET
+          exemplarTraceIdDestinations:
+          - name: trace_id
+            datasourceUid: tempo
+      - name: Tempo
+        type: tempo
+        access: browser
+        basicAuth: false
+        orgId: 1
+        uid: tempo
+        url: http://tempo.telemetry.svc.cluster.local:3100
+        isDefault: false
+        editable: true
+      - orgId: 1
+        name: Loki
+        type: loki
+        typeName: Loki
+        access: browser
+        url: http://loki.telemetry.svc.cluster.local:3100
+        basicAuth: false
+        isDefault: false
+        editable: true
+EOF
+
+# OTEL Collector
+helm upgrade --install opentelemetry-collector open-telemetry/opentelemetry-collector \
+--version 0.127.2 \
+--set mode=deployment \
+--set image.repository="otel/opentelemetry-collector-contrib" \
+--set command.name="otelcol-contrib" \
+--namespace=telemetry \
+--create-namespace \
+-f -<<EOF
+clusterRole:
+  create: true
+  rules:
+  - apiGroups:
+    - ''
+    resources:
+    - 'pods'
+    - 'nodes'
+    verbs:
+    - 'get'
+    - 'list'
+    - 'watch'
+ports:
+  promexporter:
+    enabled: true
+    containerPort: 9099
+    servicePort: 9099
+    protocol: TCP
+
+command:
+  extraArgs:
+    - "--feature-gates=receiver.prometheusreceiver.EnableNativeHistograms"
+
+config:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+    prometheus/kgateway-dataplane:
+      config:
+        global:
+          scrape_protocols: [ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ]
+        scrape_configs:
+        # Scrape the kgateway proxy pods
+        - job_name: kgateway-gateways
+          honor_labels: true
+          kubernetes_sd_configs:
+          - role: pod
+          relabel_configs:
+            - action: keep
+              regex: kube-gateway
+              source_labels:
+              - __meta_kubernetes_pod_label_kgateway
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+              action: keep
+              regex: true
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+              action: replace
+              target_label: __metrics_path__
+              regex: (.+)
+            - action: replace
+              source_labels:
+              - __meta_kubernetes_pod_ip
+              - __meta_kubernetes_pod_annotation_prometheus_io_port
+              separator: ':'
+              target_label: __address__
+            - action: labelmap
+              regex: __meta_kubernetes_pod_label_(.+)
+            - source_labels: [__meta_kubernetes_namespace]
+              action: replace
+              target_label: kube_namespace
+            - source_labels: [__meta_kubernetes_pod_name]
+              action: replace
+              target_label: pod
+    prometheus/kgateway-controlplane:
+      config:
+        global:
+          scrape_protocols: [ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ]
+        scrape_configs:
+        # Scrape the kgateway pods
+        - job_name: kgateway-gateways
+          honor_labels: true
+          kubernetes_sd_configs:
+          - role: pod
+          relabel_configs:
+            - action: keep
+              regex: kgateway
+              source_labels:
+              - __meta_kubernetes_pod_label_kgateway
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+              action: keep
+              regex: true
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+              action: replace
+              target_label: __metrics_path__
+              regex: (.+)
+            - action: replace
+              source_labels:
+              - __meta_kubernetes_pod_ip
+              - __meta_kubernetes_pod_annotation_prometheus_io_port
+              separator: ':'
+              target_label: __address__
+            - action: labelmap
+              regex: __meta_kubernetes_pod_label_(.+)
+            - source_labels: [__meta_kubernetes_namespace]
+              action: replace
+              target_label: kube_namespace
+            - source_labels: [__meta_kubernetes_pod_name]
+              action: replace
+              target_label: pod
+  exporters:
+    prometheus:
+      endpoint: 0.0.0.0:9099
+    prometheusremotewrite/kube-prometheus-stack:
+      endpoint: http://kube-prometheus-stack-prometheus.telemetry.svc:9090/api/v1/write
+    otlp/tempo:
+      endpoint: http://tempo.telemetry.svc.cluster.local:4317
+      tls:
+        insecure: true
+    otlphttp/loki:
+      endpoint: http://loki.telemetry.svc.cluster.local:3100/otlp
+      tls:
+        insecure: true
+    debug:
+      verbosity: detailed
+  service:
+    pipelines:
+      metrics:
+        receivers: [prometheus/kgateway-dataplane, prometheus/kgateway-controlplane]
+        processors: [batch]
+        exporters: [debug, prometheusremotewrite/kube-prometheus-stack]
+      logs:
+        receivers: [otlp]
+        processors: [batch]
+        exporters: [debug, otlphttp/loki]
+      traces:
+        receivers: [otlp]
+        processors: [batch]
+        exporters: [debug, otlp/tempo]
+EOF
+
+
