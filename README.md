@@ -86,6 +86,22 @@ IDP Connect integrates the Portal server with Keycloak.
 ./setup-portal.sh
 ```
 
+#### Portal Frontend authentication mode: BFF (default) vs SPA + PKCE
+
+The Portal Frontend can be deployed two ways. `setup-portal.sh` deploys the **BFF** mode by default.
+
+- **BFF (Backend-for-Frontend)** — the gateway runs the OAuth2 Authorization Code Flow via ExtAuth (`oidcAuthorizationCode`) and manages a `keycloak-session` cookie. The browser never handles tokens.
+- **SPA + PKCE** — the frontend runs the OAuth2 Authorization Code Flow with PKCE in the browser, directly against Keycloak, and sends the access token to the portal server as a `Bearer` token.
+
+Both modes reuse the same Kubernetes resource names, so switching is a single `kubectl apply` overwrite (they are mutually exclusive — not run side-by-side):
+
+```bash
+./setup-portal-frontend-spa.sh    # switch the frontend to SPA + PKCE
+./setup-portal-frontend-bff.sh    # switch the frontend back to BFF
+```
+
+The portal **server** route already accepts both a `Bearer` token and a `keycloak-session` cookie, so no server-side changes are needed when switching. Both modes use the existing public `portal-client` in the `kgateway-demo` Keycloak realm.
+
 ## Gateway and Hostname Configuration
 
 The demo uses the following hostnames:
