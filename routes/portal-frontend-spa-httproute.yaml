@@ -1,0 +1,23 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: portal-frontend
+  namespace: kgateway-system
+spec:
+  parentRefs:
+    - name: gw
+      namespace: ingress-gw
+  hostnames:
+    - developer.example.com
+  rules:
+    # SPA mode: the gateway only serves the static SPA. The OAuth2 Authorization
+    # Code Flow with PKCE runs in the browser against Keycloak, so there is no
+    # gateway ExtAuth on /v1/login or /v1/logout here (that is the BFF route).
+    # /v1 API calls are matched by the more-specific portal-server HTTPRoute.
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      backendRefs:
+        - name: portal-frontend
+          port: 4000
