@@ -102,6 +102,10 @@ Both modes reuse the same Kubernetes resource names, so switching is a single `k
 
 The portal **server** route already accepts both a `Bearer` token and a `keycloak-session` cookie, so no server-side changes are needed when switching. Both modes use the existing public `portal-client` in the `kgateway-demo` Keycloak realm.
 
+> **SPA + PKCE requires HTTPS.** PKCE runs in the browser using the Web Crypto API (`crypto.subtle` / `crypto.randomUUID`), which browsers only expose in a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts) — i.e. HTTPS (or `http://localhost`). Over plain `http://developer.example.com` the Login button throws and the UI shows **"Access issues"**. `setup-portal-frontend-spa.sh` therefore also runs `setup-spa-tls.sh` (provisions a self-signed `*.example.com` cert + `example-com-tls` Secret) and applies `gateways/gw.yaml`, which adds HTTPS/443 listeners for `developer.example.com` **and** `keycloak.example.com`. Keycloak needs HTTPS too: after the auth redirect the SPA does a browser `fetch()` to the Keycloak token endpoint, and an HTTPS page fetching an HTTP URL is blocked as mixed content. The BFF mode is unaffected — it keeps working over plain HTTP.
+>
+> In SPA mode, access the portal over **`https://developer.example.com`** (see the `443` port-forward below). The cert is self-signed, so accept the browser warning once per host — on the portal, and again when Login redirects you to `https://keycloak.example.com` (accepting it there is what lets the subsequent token `fetch` succeed).
+
 ## Gateway and Hostname Configuration
 
 The demo uses the following hostnames:
@@ -117,6 +121,12 @@ All hostnames are routed through the `gw` gateway in the `ingress-gw` namespace.
 
 ```bash
 sudo kubectl -n ingress-gw port-forward deployments/gw 80:80
+```
+
+For **SPA + PKCE** mode, also forward `443` (the gateway terminates TLS for `developer.example.com` and `keycloak.example.com`) and access the portal over `https://`:
+
+```bash
+sudo kubectl -n ingress-gw port-forward deployments/gw 443:443
 ```
 
 Then add all hostnames to `/etc/hosts`, pointing to `127.0.0.1`.

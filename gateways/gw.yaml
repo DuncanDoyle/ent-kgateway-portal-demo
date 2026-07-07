@@ -37,6 +37,28 @@ spec:
             shared-gateway-access: "true"
       kinds:
       - kind: HTTPRoute
+  # HTTPS listener for the SPA + PKCE Portal Frontend. PKCE needs a browser "secure context"
+  # (Web Crypto API), which requires HTTPS. Terminates the self-signed *.example.com cert
+  # provisioned by install/setup-spa-tls.sh. The http-developer listener above is kept so the
+  # BFF frontend continues to work over plain HTTP.
+  - protocol: HTTPS
+    port: 443
+    name: https-developer
+    hostname: developer.example.com
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        group: ""
+        name: example-com-tls
+    allowedRoutes:
+      namespaces:
+        from: Selector
+        selector:
+          matchLabels:
+            shared-gateway-access: "true"
+      kinds:
+      - kind: HTTPRoute
   - protocol: HTTP
     port: 80
     name: http-keycloak
@@ -46,6 +68,27 @@ spec:
         # from: Same
         # from: All
         from: Selector # Only allow routes from namespaces with the following label set.
+        selector:
+          matchLabels:
+            shared-gateway-access: "true"
+      kinds:
+      - kind: HTTPRoute
+  # HTTPS listener for Keycloak. Required for the SPA flow: after the auth redirect the SPA
+  # does a browser fetch() to the Keycloak token endpoint, and an HTTPS page fetching an HTTP
+  # URL is blocked as mixed content. Same self-signed cert as developer.example.com.
+  - protocol: HTTPS
+    port: 443
+    name: https-keycloak
+    hostname: keycloak.example.com
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        group: ""
+        name: example-com-tls
+    allowedRoutes:
+      namespaces:
+        from: Selector
         selector:
           matchLabels:
             shared-gateway-access: "true"

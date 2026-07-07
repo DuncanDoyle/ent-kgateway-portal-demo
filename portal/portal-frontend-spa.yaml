@@ -48,8 +48,13 @@ spec:
             path: /login
             port: 4000
         env:
+        # HTTPS endpoints: the SPA + PKCE flow uses the browser Web Crypto API, which only
+        # works in a secure context (HTTPS). The portal and Keycloak are both served over
+        # HTTPS via the gateway's :443 listeners (see gateways/gw.yaml + install/setup-spa-tls.sh).
+        # Keycloak must also be HTTPS because the browser's token fetch() from this HTTPS page
+        # to an HTTP token endpoint would be blocked as mixed content.
         - name: VITE_PORTAL_SERVER_URL
-          value: "http://developer.example.com/v1"
+          value: "https://developer.example.com/v1"
         # ---------------- SPA + PKCE mode ----------------
         # The SPA runs the OAuth2 Authorization Code Flow with PKCE in the browser,
         # directly against Keycloak. VITE_APPLIED_OIDC_AUTH_CODE_CONFIG is intentionally
@@ -57,11 +62,11 @@ spec:
         - name: VITE_CLIENT_ID
           value: "portal-client"
         - name: VITE_AUTH_ENDPOINT
-          value: "http://keycloak.example.com/realms/kgateway-demo/protocol/openid-connect/auth"
+          value: "https://keycloak.example.com/realms/kgateway-demo/protocol/openid-connect/auth"
         - name: VITE_TOKEN_ENDPOINT
-          value: "http://keycloak.example.com/realms/kgateway-demo/protocol/openid-connect/token"
+          value: "https://keycloak.example.com/realms/kgateway-demo/protocol/openid-connect/token"
         - name: VITE_LOGOUT_ENDPOINT
-          value: "http://keycloak.example.com/realms/kgateway-demo/protocol/openid-connect/logout"
+          value: "https://keycloak.example.com/realms/kgateway-demo/protocol/openid-connect/logout"
         # Optional: to enforce PKCE server-side, add attribute
         # pkce.code.challenge.method=S256 to portal-client in
         # install/keycloak-kgateway-demo-realm.sh. Not required — Keycloak public
