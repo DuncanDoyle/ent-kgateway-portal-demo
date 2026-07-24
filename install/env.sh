@@ -1,9 +1,12 @@
 #!/bin/bash
 
-export ENT_KGATEWAY_VERSION="2.2.0"
+# export ENT_KGATEWAY_VERSION="2.2.0"
+export ENT_KGATEWAY_VERSION="2.3.0"
 export ENT_KGATEWAY_HELM_VALUES_FILE="ent-kgateway-helm-values.yaml"
-export PORTAL_VERSION="2.2.0"
-export K8S_GW_API_VERSION="v1.5.1"
+# export PORTAL_VERSION="2.2.0"
+export PORTAL_VERSION="2.3.0"
+# export K8S_GW_API_VERSION="v1.5.1"
+export K8S_GW_API_VERSION="v1.6.1"
 
 export ENT_KGATEWAY_SYSTEM_NAMESPACE="kgateway-system"
 export PORTAL_NAMESPACE="kgateway-system"
