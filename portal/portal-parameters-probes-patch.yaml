@@ -1,0 +1,19 @@
+# Merge patch for the portal-params PortalParameters: tunes the Portal web server probes.
+# The deploymentOverlay is a strategic merge patch, so only these fields change.
+# Image, args, probe paths and the startupProbe keep their controller defaults.
+spec:
+  webServer:
+    deploymentOverlay:
+      spec:
+        template:
+          spec:
+            containers:
+            - name: portal-web-server   # merge key: must match the rendered container name
+              livenessProbe:
+                periodSeconds: 20
+                timeoutSeconds: 3
+                failureThreshold: 5
+              readinessProbe:
+                periodSeconds: 10
+                timeoutSeconds: 2
+                failureThreshold: 3

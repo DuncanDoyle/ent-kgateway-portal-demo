@@ -230,6 +230,40 @@ Try `GET /httpbin/v1.0/get` again — you will now receive a `403 Forbidden`. Th
 2. Go back to the HTTPBin Swagger UI and click **Authorize**. Paste your API key and click **Authorize**.
 3. Execute `GET /httpbin/v1.0/get`. You will receive a `200` response with the full HTTPBin output — authenticated via API key, with an approved subscription.
 
+## Customizing the Portal Web Server with PortalParameters Overlays
+
+The Portal controller renders the web server Deployment (`portal-portal` in `kgateway-system`). The `PortalParameters` CR customizes it through `spec.webServer.deploymentOverlay`. The overlay is a strategic merge patch, so you set only the fields you want to change. The image, args and every other default stay as rendered. The same `webServer` block also has `serviceOverlay`, `serviceAccountOverlay`, `podDisruptionBudget`, `horizontalPodAutoscaler` and `verticalPodAutoscaler`.
+
+This example tunes the liveness and readiness probes.
+
+1. Show the default probes:
+
+   ```bash
+   kubectl -n kgateway-system get deploy portal-portal \
+     -o jsonpath='{range .spec.template.spec.containers[?(@.name=="portal-web-server")]}{.livenessProbe}{"\n"}{.readinessProbe}{"\n"}{end}' | jq .
+   ```
+
+2. Apply the overlay in [`portal/portal-parameters-probes-patch.yaml`](portal/portal-parameters-probes-patch.yaml):
+
+   ```bash
+   kubectl -n kgateway-system patch portalparameters portal-params --type merge \
+     --patch-file portal/portal-parameters-probes-patch.yaml
+   ```
+
+3. Run the command from step 1 again. The period, timeout and failure threshold now come from the overlay. The probe paths (`/healthz`, `/readyz`) and port are unchanged. So are the container image and args:
+
+   ```bash
+   kubectl -n kgateway-system get deploy portal-portal \
+     -o jsonpath='{range .spec.template.spec.containers[?(@.name=="portal-web-server")]}{.image}{"\n"}{.args}{"\n"}{end}'
+   ```
+
+4. Remove the overlay to return to the defaults:
+
+   ```bash
+   kubectl -n kgateway-system patch portalparameters portal-params --type json \
+     -p '[{"op":"remove","path":"/spec/webServer/deploymentOverlay"}]'
+   ```
+
 ## Additional API Products
 
 The demo includes two more API Products that showcase more advanced Portal features.
